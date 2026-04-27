@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
     <meta name="description" content="2026 트렌드 고사 - 당신의 트렌드 지수를 확인하고 친구들과 공유하세요.">
+    
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6637485164373501" crossorigin="anonymous"></script>
+    
     <title>2026 트렌드 고사</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -65,9 +68,11 @@
 </div>
 
 <script>
+// Supabase 설정
 const U='https://seboiqkjeiizxtoofdga.supabase.co', K='sb_publishable_pWrtnMCj7s7D9xu1YD9sA_3sLv61BX';
 const sb=supabase.createClient(U,K);
 
+// 문제 데이터 풀 (50문제)
 const pool = [
     {id:1, q:"'ㄹㅋㅂㅋ'의 의미는?", a:[{t:"럭키비키",h:1},{t:"럭키비치",h:0},{t:"리키바키",h:0}]},
     {id:2, q:"로제와 브루노 마스가 협업한 곡의 제목은?", a:[{t:"아파트(APT.)",h:1},{t:"빌라",h:0},{t:"오피스텔",h:0}]},
@@ -123,6 +128,7 @@ const pool = [
 
 let limit=10, hitCount=0, cur=0, nk='', qList=[], isF=false;
 
+// 실시간 랭킹 로드
 async function load(){
     const list = document.getElementById('r-list');
     try {
