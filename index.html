@@ -1,1 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+    <meta name="description" content="2026 트렌드 고사 - 당신의 트렌드 지수를 확인하고 친구들과 공유하세요.">
+    <title>2026 트렌드 고사</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root{--p:#764ba2; --bg:linear-gradient(135deg,#667eea 0%, #764ba2 100%)}
+        body{margin:0;font-family:'Pretendard',-apple-system,sans-serif;background:var(--bg);min-height:100vh;display:flex;justify-content:center;align-items:center;padding:20px;box-sizing:border-box;color:#333}
+        .c{background:#fff;padding:2.5rem 2rem;border-radius:30px;box-shadow:0 20px 40px rgba(0,0,0,0.1);text-align:center;width:100%;max-width:400px;position:relative;}
+        input[type="text"]{width:100%;padding:15px;margin:10px 0;border:2px solid #f5f5f5;border-radius:12px;box-sizing:border-box;font-size:16px;text-align:center;}
+        .m-btn{display:flex;gap:8px;margin:15px 0}
+        .m-btn button{flex:1;padding:12px;border:1px solid #eee;border-radius:10px;background:#fff;cursor:pointer;font-size:0.9rem;color:#666}
+        .m-btn button.on{background:var(--p);color:#fff;border-color:var(--p);font-weight:bold}
+        .s-btn{background:var(--p);color:#fff;border:none;padding:18px;border-radius:15px;cursor:pointer;font-size:1.1rem;width:100%;font-weight:bold;margin-top:10px;box-shadow:0 4px 15px rgba(118,75,162,0.2)}
+        .q-box{display:none}
+        .ans-btn{display:block;width:100%;padding:16px;margin:10px 0;border:2px solid #f8f9fa;border-radius:15px;background:#fff;cursor:pointer;text-align:left;font-size:1rem;transition:0.2s}
+        .ans-btn:hover{background:#f1f3ff;border-color:var(--p)}
+        .prog-bar{width:100%;height:6px;background:#eee;border-radius:10px;margin-bottom:25px;overflow:hidden}
+        .prog-inner{height:100%;background:var(--p);width:0%;transition:0.3s}
+        #ntc{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:999;justify-content:center;align-items:center;backdrop-filter:blur(4px)}
+        .ntc-box{background:#fff;padding:30px;border-radius:25px;text-align:center;width:85%;max-width:320px;box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+        .res-ui{display:none; margin-top:10px;}
+        .cp-btn{background:#f3f0ff; color:var(--p); border:none; padding:10px 20px; border-radius:10px; font-size:0.9rem; cursor:pointer; font-weight:bold; margin-bottom:15px;}
+        .footer-text{font-size:11px; color:#ccc; margin-top:20px; letter-spacing:0.5px;}
+    </style>
+</head>
+<body>
 
+<div id="ntc"><div class="ntc-box">
+    <h3 id="ntc-t"></h3>
+    <p id="ntc-m" style="white-space:pre-wrap; margin-bottom:20px; color:#555; line-height:1.5;"></p>
+    <div id="res-ui" class="res-ui">
+        <button class="cp-btn" onclick="cp()">🔗 결과 링크 복사하기</button>
+        <p style="font-size:0.75rem; color:#999; margin-bottom:15px;">📸 결과를 스크린샷으로 찍어 공유해보세요!</p>
+    </div>
+    <button class="s-btn" onclick="cls()">확인</button>
+</div></div>
+
+<div class="c">
+    <div id="main">
+        <h1 style="margin:0; font-size:1.5rem; letter-spacing:-0.5px;">🔥 2026 트렌드 고사</h1>
+        <p style="color:#888; font-size:0.85rem; margin:10px 0 25px;">상위 1% 트렌드 리더에 도전하세요</p>
+        <input type="text" id="nk" placeholder="닉네임 입력">
+        <div class="m-btn">
+            <button onclick="sel(this,10)" class="on">입문</button>
+            <button onclick="sel(this,15)">일반</button>
+            <button onclick="sel(this,25)">심화</button>
+        </div>
+        <button class="s-btn" onclick="go()">테스트 시작하기</button>
+        <div id="r-list" style="margin-top:25px; font-size:0.8rem; color:#666; text-align:left; border-top:1px solid #f5f5f5; padding-top:15px;">
+            <p style="text-align:center; color:#ccc;">실시간 랭킹 확인 중...</p>
+        </div>
+        <div class="footer-text">© 2026 Trend Lab. All rights reserved.</div>
+    </div>
+
+    <div id="quiz" class="q-box">
+        <div class="prog-bar"><div id="p-bar" class="prog-inner"></div></div>
+        <h3 id="q-txt" style="word-break:keep-all; min-height:3em; line-height:1.4"></h3>
+        <div id="ans"></div>
+    </div>
+</div>
+
+<script>
+const U='https://seboiqkjeiizxtoofdga.supabase.co', K='sb_publishable_pWrtnMCj7s7D9xu1YD9sA_3sLv61BX';
+const sb=supabase.createClient(U,K);
+
+const pool = [
+    {id:1, q:"'ㄹㅋㅂㅋ'의 의미는?", a:[{t:"럭키비키",h:1},{t:"럭키비치",h:0},{t:"리키바키",h:0}]},
+    {id:2, q:"로제와 브루노 마스가 협업한 곡의 제목은?", a:[{t:"아파트(APT.)",h:1},{t:"빌라",h:0},{t:"오피스텔",h:0}]},
+    {id:3, q:"'중꺾마'의 올바른 뜻은?", a:[{t:"중요한 건 꺾이지 않는 마음",h:1},{t:"중간에 꺾인 마음",h:0},{t:"중국집 꺾인 마라탕",h:0}]},
+    {id:4, q:"'알잘딱깔센'의 줄임말 의미는?", a:[{t:"알아서 잘 딱 깔끔하고 센스있게",h:1},{t:"알 수 없는 센스",h:0},{t:"알고 보면 센 사람",h:0}]},
+    {id:5, q:"'오운완'이 뜻하는 활동은?", a:[{t:"오늘 운동 완료",h:1},{t:"오늘 운전 완료",h:0},{t:"오늘 운세 완료",h:0}]},
+    {id:6, q:"'T발 C야?'에서 T는 어떤 성향인가?", a:[{t:"사고형(Thinking)",h:1},{t:"태양인",h:0},{t:"티라노",h:0}]},
+    {id:7, q:"'폼 미쳤다'는 표현은 언제 쓰는가?", a:[{t:"기량이 대단할 때",h:1},{t:"얼굴이 부었을 때",h:0},{t:"날씨가 미쳤을 때",h:0}]},
+    {id:8, q:"'마라탕후루' 챌린지의 가수는?", a:[{t:"서이브",h:1},{t:"아이유",h:0},{t:"제니",h:0}]},
+    {id:9, q:"'갸루피스'는 어떤 모양의 포즈인가?", a:[{t:"V자를 뒤집은 포즈",h:1},{t:"손가락 하트",h:0},{t:"거수경례",h:0}]},
+    {id:10, q:"'갓생'은 어떤 삶을 의미하는가?", a:[{t:"부지런하고 성실한 삶",h:1},{t:"운이 좋은 삶",h:0},{t:"갓 만든 음식을 먹는 삶",h:0}]},
+    {id:11, q:"'너 T야?' 유행을 선도한 유튜브 채널은?", a:[{t:"폭스클럽",h:1},{t:"숏박스",h:0},{t:"너덜트",h:0}]},
+    {id:12, q:"'누웨진스' 밈과 가장 관련 깊은 그룹은?", a:[{t:"뉴진스",h:1},{t:"르세라핌",h:0},{t:"아이브",h:0}]},
+    {id:13, q:"'디토(Ditto)' 뮤직비디오의 상징적 동물은?", a:[{t:"사슴",h:1},{t:"토끼",h:0},{t:"고양이",h:0}]},
+    {id:14, q:"'슬릭백' 춤의 특징은?", a:[{t:"공중에 뜬 것처럼 걷기",h:1},{t:"제자리에서 뛰기",h:0},{t:"옆으로 굴러가기",h:0}]},
+    {id:15, q:"'자만추'의 최신 밈적 해석은?", a:[{t:"자고 만남 추구",h:1},{t:"자연스러운 만남 추구",h:0},{t:"자신감 충만",h:0}]},
+    {id:16, q:"에스파의 '쇠맛' 스타일은 무엇을 뜻하나?", a:[{t:"금속적이고 강렬한 사운드",h:1},{t:"철분 보충 음료",h:0},{t:"차가운 겨울 느낌",h:0}]},
+    {id:17, q:"'누칼협'의 풀이로 옳은 것은?", a:[{t:"누가 칼 들고 협박함?",h:1},{t:"누가 칼국수 사줌?",h:0},{t:"누구 칼이야?",h:0}]},
+    {id:18, q:"'억까'는 어떤 상황을 말하나?", a:[{t:"억지로 비난하는 상황",h:1},{t:"억울하게 까이는 상황",h:0},{t:"억만번 까이는 상황",h:0}]},
+    {id:19, q:"'점메추'의 뜻은?", a:[{t:"점심 메뉴 추천",h:1},{t:"점심 메뉴 추가",h:0},{t:"점심 예약",h:0}]},
+    {id:20, q:"'스불재'의 의미는?", a:[{t:"스스로 불러온 재앙",h:1},{t:"스프라이트 불맛",h:0},{t:"스마트 인재",h:0}]},
+    {id:21, q:"'추구미'는 무엇을 뜻하나?", a:[{t:"자신이 추구하는 이미지",h:1},{t:"추격하는 미식가",h:0},{t:"추방자",h:0}]},
+    {id:22, q:"'H워얼V'라는 글자를 뒤집으면?", a:[{t:"사랑해",h:1},{t:"미안해",h:0},{t:"고마워",h:0}]},
+    {id:23, q:"'식집사'가 정성껏 돌보는 것은?", a:[{t:"반려식물",h:1},{t:"고양이",h:0},{t:"강아지",h:0}]},
+    {id:24, q:"'야메추'는 무엇의 줄임말인가?", a:[{t:"야식 메뉴 추천",h:1},{t:"야외 메뉴",h:0},{t:"야구 추천",h:0}]},
+    {id:25, q:"'갓기'는 주로 누구에게 쓰나?", a:[{t:"어리고 뛰어난 아이돌",h:1},{t:"갓 쓴 아기",h:0},{t:"그냥 아기",h:0}]},
+    {id:26, q:"'뇌절'이라는 용어의 유래 애니는?", a:[{t:"나루토",h:1},{t:"원피스",h:0},{t:"슬램덩크",h:0}]},
+    {id:27, q:"'꾸꾸꾸'의 의미로 옳은 것은?", a:[{t:"꾸며도 꾸질꾸질",h:1},{t:"꾸밈 꾸밈",h:0},{t:"꾸꾸기",h:0}]},
+    {id:28, q:"'핑프'가 의미하는 태도는?", a:[{t:"검색하지 않고 물어만 봄",h:1},{t:"핑크 프로필을 선호함",h:0},{t:"핑계만 댐",h:0}]},
+    {id:29, q:"'오저치고'의 뜻은?", a:[{t:"오늘 저녁 치킨 고",h:1},{t:"오늘 저녁 치과",h:0},{t:"오리 고기",h:0}]},
+    {id:30, q:"'나심비'는 무엇에 대한 만족인가?", a:[{t:"나의 심리적 만족",h:1},{t:"나의 심부름",h:0},{t:"나트륨 수치",h:0}]},
+    {id:31, q:"'이생망'은 무엇의 줄임말인가?", a:[{t:"이번 생은 망했다",h:1},{t:"이제 생맥주 망함",h:0},{t:"이동 생중계",h:0}]},
+    {id:32, q:"'완내스'의 뜻은?", a:[{t:"완전 내 스타일",h:1},{t:"완전 내 스케줄",h:0},{t:"완구 스타일",h:0}]},
+    {id:33, q:"'졌잘싸'는 어떤 결과에 쓰나?", a:[{t:"졌지만 잘 싸웠다",h:1},{t:"졌으니 잘 사자",h:0},{t:"졌다 싸우자",h:0}]},
+    {id:34, q:"'복세편살'의 뜻으로 옳은 것은?", a:[{t:"복잡한 세상 편하게 살자",h:1},{t:"복스러운 살",h:0},{t:"복수하는 세상",h:0}]},
+    {id:35, q:"'좋댓구알' 중 '알'의 의미는?", a:[{t:"알림 설정",h:1},{t:"알고리즘",h:0},{t:"알아서 공유",h:0}]},
+    {id:36, q:"커뮤니티 용어 '반박'의 의미는?", a:[{t:"반말 모드 박탈",h:1},{t:"반대 박수",h:0},{t:"반찬 박스",h:0}]},
+    {id:37, q:"'삼귀다'는 어떤 관계인가?", a:[{t:"사귀기 전 썸 타는 단계",h:1},{t:"삼겹살 먹는 사이",h:0},{t:"삼각 관계",h:0}]},
+    {id:38, q:"'롬곡'이라는 글자를 뒤집으면?", a:[{t:"눈물",h:1},{t:"곡성",h:0},{t:"공포",h:0}]},
+    {id:39, q:"'무지성' 상태는 어떤 것인가?", a:[{t:"생각 없이 행동함",h:1},{t:"지식 없음",h:0},{t:"성격 없음",h:0}]},
+    {id:40, q:"'군싹'은 어떤 느낌을 표현하나?", a:[{t:"군침이 싹 도네",h:1},{t:"군대가 싹 바뀌었네",h:0},{t:"군것질",h:0}]},
+    {id:41, q:"'비담'이 담당하는 역할은?", a:[{t:"비주얼 담당",h:1},{t:"비명 담당",h:0},{t:"비밀 담당",h:0}]},
+    {id:42, q:"'낄낄빠빠'가 강조하는 예절은?", a:[{t:"낄 때 끼고 빠질 때 빠지자",h:1},{t:"낄낄 빠이",h:0},{t:"낄 때까지",h:0}]},
+    {id:43, q:"'팬아저'의 뜻은?", a:[{t:"팬 아니어도 저장",h:1},{t:"팬 아저씨",h:0},{t:"팬 저격",h:0}]},
+    {id:44, q:"'별다줄'은 무엇을 비판하나?", a:[{t:"별걸 다 줄이는 현상",h:1},{t:"별다방 줄 서기",h:0},{t:"별이 줄어드는 현상",h:0}]},
+    {id:45, q:"'버카충'의 의미는?", a:[{t:"버스 카드 충전",h:1},{t:"버거 충격",h:0},{t:"버스 충돌",h:0}]},
+    {id:46, q:"'할말하않'의 뜻은?", a:[{t:"할 말은 많지만 안 하겠다",h:1},{t:"할 말 하고 안 함",h:0},{t:"할머니 말씀",h:0}]},
+    {id:47, q:"'워라밸'이 추구하는 가치는?", a:[{t:"일과 삶의 균형",h:1},{t:"월급 밸런스",h:0},{t:"워킹 밸런스",h:0}]},
+    {id:48, q:"'소확행'의 올바른 풀이는?", a:[{t:"소소하지만 확실한 행복",h:1},{t:"소중한 행복",h:0},{t:"소고기 행복",h:0}]},
+    {id:49, q:"'내또출'은 누구의 탄식인가?", a:[{t:"내일 또 출근하는 직장인",h:1},{t:"내일 또 출항하는 선원",h:0},{t:"내일 또 출동하는 경찰",h:0}]},
+    {id:50, q:"'갓생'의 대표적 챌린지는?", a:[{t:"미라클 모닝",h:1},{t:"야식 먹기",h:0},{t:"늦잠 자기",h:0}]}
+];
+
+let limit=10, hitCount=0, cur=0, nk='', qList=[], isF=false;
+
+async function load(){
+    const list = document.getElementById('r-list');
+    try {
+        const { data, error } = await sb.from('ranking').select('*').order('score',{ascending:false}).limit(5);
+        if(!error && data && data.length > 0) {
+            list.innerHTML = '<b style="color:var(--p); font-size:0.85rem">🏆 실시간 랭킹</b><br>' + data.map((r,i)=>`<div style="padding:6px 0; border-bottom:1px solid #fbfbfb; display:flex; justify-content:space-between;"><span>${i+1}. ${r.name}</span><span style="font-weight:bold">${r.score}점</span></div>`).join('');
+        } else { 
+            list.innerHTML = "<p style='text-align:center; color:#ccc; font-size:0.75rem;'>새로운 도전을 기다리고 있습니다!</p>"; 
+        }
+    } catch(e) { 
+        list.innerHTML = "<p style='text-align:center; color:#ccc;'>데이터 업데이트 중...</p>"; 
+    }
+}
+
+function sel(b,l){document.querySelectorAll('.m-btn button').forEach(x=>x.classList.remove('on'));b.classList.add('on');limit=l;}
+
+function go(){
+    nk=document.getElementById('nk').value.trim();
+    if(!nk) return alert("닉네임을 입력해주세요.");
+    document.getElementById('main').style.display='none';
+    document.getElementById('quiz').style.display='block';
+    qList = [...pool].sort(()=>Math.random()-0.5).slice(0, limit);
+    cur=0; hitCount=0; showQ();
+}
+
+function showQ(){
+    if(cur>=qList.length) { finish(); return; }
+    document.getElementById('p-bar').style.width = ((cur/qList.length)*100) + "%";
+    document.getElementById('q-txt').innerText = qList[cur].q;
+    document.getElementById('ans').innerHTML = qList[cur].a.sort(()=>Math.random()-0.5).map(v=>`<button class="ans-btn" onclick="nxt(${v.h})">${v.t}</button>`).join('');
+}
+
+function nxt(h){ hitCount+=h; cur++; showQ(); }
+
+async function finish(){
+    const score = Math.round((hitCount / qList.length) * 100);
+    document.getElementById('res-ui').style.display = 'block';
+    
+    try {
+        const { error } = await sb.from('ranking').insert([{ name: nk, score: score, level: 'Active' }]);
+        if(error) {
+            msg("분석 완료!", `${nk}님의 점수는 ${score}점입니다!\n지금 이 결과를 캡처해서 친구들과 공유해보세요!`);
+        } else {
+            msg("랭킹 등록 완료!", `${nk}님의 점수는 ${score}점입니다!\n명예의 전당에 실시간으로 반영되었습니다!`);
+            confetti({particleCount:120, spread:70, origin:{y:0.6}});
+        }
+    } catch(e) {
+        msg("분석 완료!", `${nk}님의 점수는 ${score}점입니다!\n결과를 캡처하여 오늘의 센스를 기록하세요.`);
+    }
+}
+
+function cp(){
+    const t = document.createElement("textarea");
+    document.body.appendChild(t);
+    t.value = window.location.href;
+    t.select();
+    document.execCommand('copy');
+    document.body.removeChild(t);
+    alert("링크가 복사되었습니다! 친구들에게 공유해보세요.");
+}
+
+function msg(t, m){ 
+    document.getElementById('ntc-t').innerText=t; 
+    document.getElementById('ntc-m').innerText=m; 
+    document.getElementById('ntc').style.display='flex'; 
+    isF=true; 
+}
+function cls(){ document.getElementById('ntc').style.display='none'; if(isF) location.reload(); }
+load();
+</script>
+</body>
+</html>
